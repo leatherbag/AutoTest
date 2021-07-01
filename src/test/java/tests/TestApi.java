@@ -1,7 +1,9 @@
 package tests;
 
-import io.restassured.http.Cookie;
+import io.restassured.http.ContentType;
+import io.restassured.response.Response;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.Cookie;
 
 import java.util.Map;
 
@@ -10,8 +12,11 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
+
 
 public class TestApi {
+    public static String token;
 
     @Test
     void loginWithCookieTest() {
@@ -19,18 +24,33 @@ public class TestApi {
         Map<String, String> cookiesMap =
                 given()
                         .contentType("application/json; charset=utf-8")
-                        .formParam("email", "testtestsurname@yandex.ru")
-                        .formParam("password", "Qwerty123Qb!")
+                        .formParam("email", "admin@admin.com")
+                        .formParam("password", "Admin")
                         .when()
-                        .post("auth/accounts")
+                        .post("http://192.168.128.215/acapi/auth")
                         .then()
                         .statusCode(200)
                         .log().body()
                         .extract().cookies();
+        open("http://192.168.128.215/acui/dashboard");
+        getWebDriver().manage().addCookie(new Cookie("Nop.customer", cookiesMap.get("Nop.customer")));
+        getWebDriver().manage().addCookie(new Cookie("NOPCOMMERCE.AUTH", cookiesMap.get("NOPCOMMERCE.AUTH")));
+        getWebDriver().manage().addCookie(new Cookie("ARRAffinity", cookiesMap.get("ARRAffinity")));
 
-
-        open("");
-        $(".account").shouldHave(text("qaguru@qa.guru"));
+        open("http://192.168.128.215/acui/settings/service_providers");
+        $(".md-title").shouldHave(text("Поставщики услуг"));
     }
 
+    @Test
+    public void postmanFirstGetTest() {
+        token = given()
+                .auth()
+                .basic("admin@admin.com", "Admin")
+                .when()
+                .get("http://192.168.128.215/acapi/auth")
+                .then()
+                .statusCode(200)
+                .log().body()
+                .extract().path("token");
+    }
 }
